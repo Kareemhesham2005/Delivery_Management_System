@@ -2,8 +2,6 @@
 #define DMS_DELIVERY_SYSTEM_H
 
 #include <vector>
-#include <memory>
-#include <optional>
 #include <string>
 #include "Point.h"
 #include "Driver.h"
@@ -16,6 +14,8 @@ class DeliverySystem {
 public:
     DeliverySystem();
     ~DeliverySystem() = default;
+
+    std::vector<Order> orders;
 
     // Create an order; returns order id or -1 on failure.
     int createOrder(int restaurantId, int itemIndex, const Point &customerLocation, std::string &errMsg);
@@ -33,7 +33,6 @@ private:
     // Internal storage
     std::vector<Restaurant> restaurants;
     std::vector<Driver> drivers;
-    std::vector<Order> orders;
 
     // Helper: find nearest available driver to a location (returns driver index or -1)
     int findNearestAvailableDriver(const Point &loc) const;

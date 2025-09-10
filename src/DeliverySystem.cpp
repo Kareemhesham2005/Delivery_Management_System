@@ -1,8 +1,8 @@
 #include "../include/DeliverySystem.h"
 
 #include <sstream>
-#include <limits>
 #include <algorithm>
+#include <iomanip>
 
 using namespace dms;
 
@@ -28,28 +28,28 @@ DeliverySystem::DeliverySystem() {
 // Return index in drivers vector or -1 if none available.
 int DeliverySystem::findNearestAvailableDriver(const Point &loc) const {
     int best = -1;
-    double bestDist = std::numeric_limits<double>::infinity();
+    double bestDist = 1e9;
     for (size_t i = 0; i < drivers.size(); ++i) {
         if (!drivers[i].available) continue;
         double d = drivers[i].location.distanceTo(loc);
         if (d < bestDist) {
             bestDist = d;
-            best = static_cast<int>(i);
+            best = i;
         }
     }
     return best;
 }
 
 int DeliverySystem::createOrder(int restaurantId, int itemIndex, const Point &customerLocation, std::string &errMsg) {
-    // Validate restaurant id (simple map of ids to indices)
-    auto it = std::find_if(restaurants.begin(), restaurants.end(), [&](const Restaurant &r){ return r.id == restaurantId; });
-    if (it == restaurants.end()) {
+
+    if (restaurantId < 0 || restaurantId >= static_cast<int>(restaurants.size())) {
         errMsg = "Restaurant not found";
         return -1;
     }
-    int restIndex = static_cast<int>(std::distance(restaurants.begin(), it));
 
-    if (itemIndex < 0 || itemIndex >= static_cast<int>(it->items.size())) {
+    Restaurant &restaurant = restaurants[restaurantId];
+
+    if (itemIndex < 0 || itemIndex >= static_cast<int>(restaurant.items.size())) {
         errMsg = "Invalid item index for the chosen restaurant";
         return -1;
     }
@@ -62,14 +62,13 @@ int DeliverySystem::createOrder(int restaurantId, int itemIndex, const Point &cu
     }
 
     // Compute simple cost: item cost + distance * factor
-    double distance = customerLocation.distanceTo(it->location);
+    double distance = customerLocation.distanceTo(restaurant.location) + drivers[driverIdx].location.distanceTo(restaurant.location);
     const double costPerKilo = 0.5; // illustrative factor
-    double cost = it->items[itemIndex].cost + distance * costPerKilo;
+    double cost = restaurant.items[itemIndex].cost + distance * costPerKilo;
 
     int orderId = static_cast<int>(orders.size()) + 1;
-    Order order(orderId, restaurantId, itemIndex, cost);
-    order.driverId = drivers[driverIdx].id;
-    orders.push_back(std::move(order));
+    Order order(orderId, restaurantId, itemIndex, cost, drivers[driverIdx].id);
+    orders.push_back(order);
 
     // mark driver as busy
     drivers[driverIdx].available = false;
@@ -86,10 +85,8 @@ bool DeliverySystem::changeOrderStatus(int orderId, OrderStatus status, std::str
     o.setStatus(status);
 
     // If delivered or cancelled, free the driver (if any)
-    if ((status == OrderStatus::Delivered || status == OrderStatus::Cancelled) && o.driverId.has_value()) {
-        int did = o.driverId.value();
-        auto it = std::find_if(drivers.begin(), drivers.end(), [&](const Driver &d){ return d.id == did; });
-        if (it != drivers.end()) it->available = true;
+    if ((status == OrderStatus::Delivered || status == OrderStatus::Cancelled)) {
+        drivers[o.driverId].available = true;
     }
     return true;
 }
@@ -109,17 +106,19 @@ std::string DeliverySystem::describeOrder(int orderId) const {
     ss << "\n";
 
     // restaurant and item info
-    auto restIt = std::find_if(restaurants.begin(), restaurants.end(), [&](const Restaurant &r){ return r.id == o.restaurantId; });
-    if (restIt != restaurants.end()) {
-        ss << "Restaurant: " << restIt->name << "\n";
-        if (o.itemIndex >= 0 && o.itemIndex < static_cast<int>(restIt->items.size())) {
-            ss << "Item: " << restIt->items[o.itemIndex].name << " (" << restIt->items[o.itemIndex].cost << ")\n";
-        }
+    if (o.restaurantId < 0 || o.restaurantId >= static_cast<int>(restaurants.size())) {
+        return "Invalid Restaurant";
     }
-    ss << "Cost: " << o.cost << "\n";
-    if (o.driverId.has_value()) {
-        ss << "Driver ID: " << o.driverId.value() << "\n";
+
+    const Restaurant &restIt = restaurants[o.restaurantId];
+    ss << "Restaurant: " << restIt.name << "\n";
+    if (o.itemIndex >= 0 && o.itemIndex < static_cast<int>(restIt.items.size())) {
+        ss << "Item: " << restIt.items[o.itemIndex].name << " (" << std::fixed << std::setprecision(2) << restIt.items[o.itemIndex].cost << "$)\n";
+        ss.unsetf(std::ios::floatfield);
     }
+    ss << "Cost: " << std::fixed << std::setprecision(2) << o.cost << "$\n";
+    ss.unsetf(std::ios::floatfield);
+    ss << "Driver ID: " << o.driverId << "\n";
     return ss.str();
 }
 
@@ -128,7 +127,8 @@ std::string DeliverySystem::listRestaurants() const {
     for (const auto &r : restaurants) {
         ss << "Restaurant ID: " << r.id << " - " << r.name << " (location: " << r.location.x << "," << r.location.y << ")\n";
         for (size_t i = 0; i < r.items.size(); ++i) {
-            ss << "  [" << i << "] " << r.items[i].name << " - " << r.items[i].cost << "\n";
+            ss << "  [" << i + 1 << "] " << r.items[i].name << " - " << std::fixed << std::setprecision(2) << r.items[i].cost << "$\n";
+            ss.unsetf(std::ios::floatfield);
         }
     }
     return ss.str();

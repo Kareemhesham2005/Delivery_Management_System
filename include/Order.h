@@ -2,28 +2,29 @@
 #define DMS_ORDER_H
 
 #include <string>
-#include <optional>
 
 namespace dms {
 
 enum class OrderStatus { Assigned, Delivered, Cancelled };
 
-/*
-Simple Order record. For clarity and safety this struct uses no raw pointers.
-*/
+
 struct Order {
     int id = -1;
     int restaurantId = -1;
     int itemIndex = -1;
     double cost = 0.0;
-    std::optional<int> driverId; // driver assigned (if any)
+    int driverId;
     OrderStatus status = OrderStatus::Assigned;
 
     Order() = default;
-    Order(int id_, int restId, int itemIdx, double cost_)
-        : id(id_), restaurantId(restId), itemIndex(itemIdx), cost(cost_), status(OrderStatus::Assigned) {}
+    Order(int id_, int restId, int itemIdx, double cost_, int driverId_)
+        : id(id_), restaurantId(restId), itemIndex(itemIdx), cost(cost_), status(OrderStatus::Assigned), driverId(driverId_) {}
 
-    void setStatus(OrderStatus s) { status = s; }
+    void setStatus(OrderStatus s);
+    double getTotalCost() const;
+    int getId() const;
+    std::string getStatus() const;
+
 };
 
 } // namespace dms

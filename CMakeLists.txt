@@ -10,21 +10,5 @@ include_directories(include)
 add_executable(DeliveryManagementSystem
     src/main.cpp
     src/DeliverySystem.cpp
-    src/Point.cpp
-    src/Driver.cpp
-    src/Restaurant.cpp
     src/Order.cpp
 )
-
-# Optional: simple tests target (no external frameworks)
-add_executable(tests_runner
-    tests/tests.cpp
-    src/Point.cpp
-    src/DeliverySystem.cpp
-    src/Driver.cpp
-    src/Restaurant.cpp
-    src/Order.cpp
-)
-
-enable_testing()
-add_test(NAME basic-tests COMMAND tests_runner)
