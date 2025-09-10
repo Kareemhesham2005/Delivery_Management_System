@@ -11,11 +11,6 @@ A small console-based Delivery Management System written in modern C++ (C++17). 
 * [Project structure](#project-structure)
 * [Requirements](#requirements)
 * [Build & Run (Linux)](#build--run-linux)
-* [Alternative: build with g++ directly](#alternative-build-with-g-directly)
-* [Troubleshooting](#troubleshooting)
-* [Coding style & notes](#coding-style--notes)
-* [Contributing](#contributing)
-* [License](#license)
 
 ---
 
@@ -27,7 +22,7 @@ Use this README to build, run, and (optionally) package an executable for distri
 
 ---
 
-## Features (expected)
+## Features
 
 * Core classes for orders, drivers, restaurants, and the delivery system.
 * Separation of interface (`.h`) and implementation (`.cpp`).
